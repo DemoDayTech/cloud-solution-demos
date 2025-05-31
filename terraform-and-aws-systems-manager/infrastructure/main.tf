@@ -64,11 +64,10 @@ resource "aws_instance" "demo_instance" {
   instance_type               = "t3.micro"
   iam_instance_profile        = aws_iam_instance_profile.ec2_ssm_profile.name
 
-  # Optional: add user data to print the SSM param (safe for demo only)
-  user_data = <<-EOF
-              #!/bin/bash
-              aws ssm get-parameter --name "/demo-app/db-password" --with-decryption --region ${var.aws_region} --output text --query Parameter.Value > /tmp/db_password.txt
-              EOF
+  user_data = templatefile("${path.module}/startup.sh", {
+      aws_region = var.aws_region
+    }
+  )
 
   tags = {
     Name = "Terraform-SSM-Demo"
