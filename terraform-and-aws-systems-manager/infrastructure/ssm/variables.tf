@@ -1,8 +1,3 @@
-variable "aws_region" {
-  description = "AWS region"
-  default     = "us-east-2"
-}
-
 variable "healthcare_app" {
   type = map(string)
   default = {
