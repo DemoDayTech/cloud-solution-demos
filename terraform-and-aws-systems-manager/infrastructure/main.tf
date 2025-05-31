@@ -63,6 +63,7 @@ resource "aws_instance" "demo_instance" {
   ami                         = data.aws_ami.amazon_linux.id
   instance_type               = "t3.micro"
   iam_instance_profile        = aws_iam_instance_profile.ec2_ssm_profile.name
+  count                       = 3
 
   user_data = templatefile("${path.module}/startup.sh", {
       aws_region = var.aws_region
@@ -70,6 +71,6 @@ resource "aws_instance" "demo_instance" {
   )
 
   tags = {
-    Name = "Terraform-SSM-Demo"
+    Name = "Healthcare App"
   }
 }
