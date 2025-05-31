@@ -22,4 +22,4 @@ chmod +x /usr/local/bin/healthcare_app.sh
 nohup /usr/local/bin/healthcare_app.sh &
 
 # SSM Fetch Secret Example
-aws ssm get-parameter --name "/demo-app/db-password" --with-decryption --region ${aws_region} --output text --query Parameter.Value > /tmp/db_password.txt
+aws ssm get-parameter --name "/demo/healthcare-app/credentials" --with-decryption --region ${aws_region} --output text --query Parameter.Value > /tmp/credentials.txt
