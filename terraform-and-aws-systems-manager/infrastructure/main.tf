@@ -9,10 +9,10 @@ terraform {
 }
 
 # This example uses your AWS [default] profile and its region. 
-#TODO Provide example for custom profile and use vars from variables.tf
+# In order to use a custom AWS profile form your ~/.aws/ you will have to provide as follows:
 # provider "aws" {
-#   region  = var.region
-#   profile = "my-profile-name"
+#   region  = "region name from ~/.aws/config i.e. us-east-1"
+#   profile = "profile name from ~/.aws/credentials"
 # }
 
 # SSM Parameters (SecureString)

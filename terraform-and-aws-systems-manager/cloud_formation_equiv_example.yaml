@@ -1,0 +1,199 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Equivalent to provided Terraform - EC2 instances with SSM IAM role and SSM parameters
+
+Parameters:
+  AWSRegion:
+    Type: String
+    Default: us-east-1
+
+  HealthcareAppJson:
+    Type: String
+    Description: JSON string for healthcare app credentials
+
+  MonitoringAppJson:
+    Type: String
+    Description: JSON string for monitoring app credentials
+
+  BusinessAppJson:
+    Type: String
+    Description: JSON string for business app credentials
+
+Resources:
+
+  # --- SSM Parameters ---
+
+  HealthcareAppSSMParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: "/demo/healthcare-app/credentials"
+      Type: SecureString
+      Value: !Ref HealthcareAppJson
+
+  MonitoringAppSSMParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: "/demo/monitoring-app/credentials"
+      Type: SecureString
+      Value: !Ref MonitoringAppJson
+
+  BusinessAppSSMParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: "/demo/business-app/credentials"
+      Type: SecureString
+      Value: !Ref BusinessAppJson
+
+  # --- IAM Role and Instance Profile ---
+
+  EC2SSMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ec2_ssm_role
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: [ec2.amazonaws.com]
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+
+  EC2SSMInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: ec2_ssm_profile
+      Roles:
+        - !Ref EC2SSMRole
+
+  # --- EC2 Instances ---
+
+  # Healthcare App - 3 instances
+  HealthcareInstance1:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-xxxxxxxxxxxxxx   # Replace with latest Amazon Linux 2023 AMI ID for your region
+      InstanceType: t3.micro
+      IamInstanceProfile: !Ref EC2SSMInstanceProfile
+      UserData: !Base64 |
+        #!/bin/bash
+        # Call your healthcare-app.sh logic here
+        echo "Running healthcare app setup for region ${AWS::Region}"
+
+      Tags:
+        - Key: Name
+          Value: Healthcare App
+
+  HealthcareInstance2:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-xxxxxxxxxxxxxx
+      InstanceType: t3.micro
+      IamInstanceProfile: !Ref EC2SSMInstanceProfile
+      UserData: !Base64 |
+        #!/bin/bash
+        echo "Running healthcare app setup for region ${AWS::Region}"
+
+      Tags:
+        - Key: Name
+          Value: Healthcare App
+
+  HealthcareInstance3:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-xxxxxxxxxxxxxx
+      InstanceType: t3.micro
+      IamInstanceProfile: !Ref EC2SSMInstanceProfile
+      UserData: !Base64 |
+        #!/bin/bash
+        echo "Running healthcare app setup for region ${AWS::Region}"
+
+      Tags:
+        - Key: Name
+          Value: Healthcare App
+
+  # Monitoring App - 4 instances
+  MonitoringInstance1:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-xxxxxxxxxxxxxx
+      InstanceType: t3.micro
+      IamInstanceProfile: !Ref EC2SSMInstanceProfile
+      UserData: !Base64 |
+        #!/bin/bash
+        echo "Running monitoring app setup for region ${AWS::Region}"
+
+      Tags:
+        - Key: Name
+          Value: Monitoring App
+
+  MonitoringInstance2:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-xxxxxxxxxxxxxx
+      InstanceType: t3.micro
+      IamInstanceProfile: !Ref EC2SSMInstanceProfile
+      UserData: !Base64 |
+        #!/bin/bash
+        echo "Running monitoring app setup for region ${AWS::Region}"
+
+      Tags:
+        - Key: Name
+          Value: Monitoring App
+
+  MonitoringInstance3:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-xxxxxxxxxxxxxx
+      InstanceType: t3.micro
+      IamInstanceProfile: !Ref EC2SSMInstanceProfile
+      UserData: !Base64 |
+        #!/bin/bash
+        echo "Running monitoring app setup for region ${AWS::Region}"
+
+      Tags:
+        - Key: Name
+          Value: Monitoring App
+
+  MonitoringInstance4:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-xxxxxxxxxxxxxx
+      InstanceType: t3.micro
+      IamInstanceProfile: !Ref EC2SSMInstanceProfile
+      UserData: !Base64 |
+        #!/bin/bash
+        echo "Running monitoring app setup for region ${AWS::Region}"
+
+      Tags:
+        - Key: Name
+          Value: Monitoring App
+
+  # Business App - 2 instances
+  BusinessInstance1:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-xxxxxxxxxxxxxx
+      InstanceType: t3.micro
+      IamInstanceProfile: !Ref EC2SSMInstanceProfile
+      UserData: !Base64 |
+        #!/bin/bash
+        echo "Running business app setup for region ${AWS::Region}"
+
+      Tags:
+        - Key: Name
+          Value: Business App
+
+  BusinessInstance2:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-xxxxxxxxxxxxxx
+      InstanceType: t3.micro
+      IamInstanceProfile: !Ref EC2SSMInstanceProfile
+      UserData: !Base64 |
+        #!/bin/bash
+        echo "Running business app setup for region ${AWS::Region}"
+
+      Tags:
+        - Key: Name
+          Value: Business App

@@ -1,0 +1,1 @@
+cloud_formation_equiv_example.yaml is a quick chatgpt created Cloudformation equivalent of the Terraform main.tf file
