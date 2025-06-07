@@ -1,0 +1,34 @@
+{
+    "agent": {
+        "metrics_collection_interval": 60,
+        "logfile": "/opt/aws/amazon-cloudwatch-agent/logs/amazon-cloudwatch-agent.log"
+    },
+    "metrics": {
+        "namespace": "ProcstatDemo",
+        "append_dimensions": {
+            "InstanceId": "${aws:InstanceId}"
+        },
+        "metrics_collected": {
+            "procstat": [
+                {
+                    "pattern": "nginx",
+                    "measurement": [
+                        "cpu_usage",
+                        "memory_rss",
+                        "threads"
+                    ],
+                    "metrics_collection_interval": 60
+                },
+                {
+                    "pattern": "my-app",
+                    "measurement": [
+                        "cpu_usage",
+                        "memory_rss",
+                        "threads"
+                    ],
+                    "metrics_collection_interval": 60
+                }
+            ]
+        }
+    }
+}
