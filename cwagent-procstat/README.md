@@ -20,3 +20,8 @@ This project provisions an EC2 instance with:
 
 ```bash
 terraform init
+
+
+
+TODO
+- The cw config file is not well formed and CW agent does not start up. 
