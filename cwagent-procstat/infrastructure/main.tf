@@ -122,9 +122,50 @@ resource "aws_instance" "demo_instance" {
               # Simulate my-app process
               nohup bash -c 'while true; do echo "my-app running"; sleep 10; done' >/var/log/my-app.log 2>&1 &
 
+              # Get a session token for IMDSv2
+              TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
+
+              # Use the token to get the instance ID
+              INSTANCE_ID=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/instance-id)
+
               # Write CloudWatch agent config
               cat <<EOT > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
-              ${file("cloudwatch-agent-config.json")}
+              {
+                  "agent": {
+                      "metrics_collection_interval": 60,
+                      "logfile": "/opt/aws/amazon-cloudwatch-agent/logs/amazon-cloudwatch-agent.log"
+                  },
+                  "metrics": {
+                      "namespace": "ProcstatDemo",
+                      "append_dimensions": {
+                          "InstanceId": "$INSTANCE_ID"
+                      },
+                      "metrics_collected": {
+                          "procstat": [
+                              {
+                                  "pattern": "nginx",
+                                  "measurement": [
+                                      "cpu_usage",
+                                      "memory_rss",
+                                      "num_threads",
+                                      "pid_count"
+                                  ],
+                                  "metrics_collection_interval": 60
+                              },
+                              {
+                                  "pattern": "my-app",
+                                  "measurement": [
+                                      "cpu_usage",
+                                      "memory_rss",
+                                      "num_threads",
+                                      "pid_count"
+                                  ],
+                                  "metrics_collection_interval": 60
+                              }
+                          ]
+                      }
+                  }
+              }
               EOT
 
               # Start CloudWatch agent
@@ -139,16 +180,16 @@ resource "aws_instance" "demo_instance" {
 
 # CloudWatch Alarm - nginx
 resource "aws_cloudwatch_metric_alarm" "nginx_procstat_alarm" {
-  alarm_name          = "Procstat-nginx-process-alarm"
-  comparison_operator = "LessThanThreshold"
-  evaluation_periods  = 2
-  metric_name         = "cpu_usage"
+  alarm_name          = "procstat-nginx-process-alarm"
   namespace           = "ProcstatDemo"
+  metric_name         = "procstat_lookup_pid_count"
+  comparison_operator = "LessThanThreshold"
+  evaluation_periods  = 1
   period              = 60
-  statistic           = "Average"
-  threshold           = 0.1
+  statistic           = "Minimum"
+  threshold           = 1
   dimensions = {
-    InstanceId = aws_instance.demo_instance.id
+    pattern    = "nginx"
   }
   treat_missing_data = "breaching"
   alarm_description  = "Alarm when nginx process goes down"
@@ -157,16 +198,16 @@ resource "aws_cloudwatch_metric_alarm" "nginx_procstat_alarm" {
 
 # CloudWatch Alarm - my-app
 resource "aws_cloudwatch_metric_alarm" "myapp_procstat_alarm" {
-  alarm_name          = "Procstat-myapp-process-alarm"
-  comparison_operator = "LessThanThreshold"
-  evaluation_periods  = 2
-  metric_name         = "cpu_usage"
+  alarm_name          = "procstat-myapp-process-alarm"
   namespace           = "ProcstatDemo"
+  metric_name         = "procstat_lookup_pid_count"
+  comparison_operator = "LessThanThreshold"
+  evaluation_periods  = 1
   period              = 60
-  statistic           = "Average"
-  threshold           = 0.1
+  statistic           = "Minimum"
+  threshold           = 1
   dimensions = {
-    InstanceId = aws_instance.demo_instance.id
+    pattern    = "my-app"
   }
   treat_missing_data = "breaching"
   alarm_description  = "Alarm when my-app process goes down"
