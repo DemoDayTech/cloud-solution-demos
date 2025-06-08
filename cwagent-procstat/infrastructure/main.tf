@@ -13,7 +13,7 @@ resource "aws_key_pair" "deployer" {
   public_key = tls_private_key.example.public_key_openssh
 }
 
-# THis can be used to SSH into your EC2 instance. 
+# This will be used to SSH into your EC2 instance. 
 resource "local_file" "my-ec2-keypair" {
   content = tls_private_key.example.private_key_pem
   filename = "${aws_key_pair.deployer.key_name}.pem"
@@ -88,7 +88,7 @@ resource "aws_sns_topic" "procstat_alerts" {
 resource "aws_sns_topic_subscription" "email_alert" {
   topic_arn = aws_sns_topic.procstat_alerts.arn
   protocol  = "email"
-  endpoint  = "dev@demodaytech.com"
+  endpoint  = "dev@demodaytech.com" # Update this with your email
 }
 
 # EC2 Instance (Amazon Linux 2023)

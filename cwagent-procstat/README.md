@@ -24,4 +24,8 @@ terraform init
 
 
 TODO
-- The cw config file is not well formed and CW agent does not start up. 
+- The cw alarm is not properly associated with the cw metrics produced by procstat. 
+
+cd infrastructure
+chmod 400 "procstat-demo-key.pem"
+ssh -i "procstat-demo-key.pem" ec2-user@ec2-54-242-174-37.compute-1.amazonaws.com
