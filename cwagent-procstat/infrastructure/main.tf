@@ -1,27 +1,32 @@
-provider "aws" {
-  region = "us-east-1"
-}
+# This example uses your AWS [default] profile and its region. 
+# In order to use a custom AWS profile form your ~/.aws/ you will have to provide as follows:
+# provider "aws" {
+#   region  = "region name from ~/.aws/config i.e. us-east-1"
+#   profile = "profile name from ~/.aws/credentials"
+# }
 
-# Generate SSH key pair (local ephemeral key for demo)
+# Generate EC2 SSH Key Pair (local ephemeral key for demo)
 resource "tls_private_key" "example" {
   algorithm = "RSA"
   rsa_bits  = 4096
 }
 
-resource "aws_key_pair" "deployer" {
-  key_name   = "procstat-demo-key"
+resource "aws_key_pair" "key" {
+  key_name   = "${var.basename}-demo-key"
   public_key = tls_private_key.example.public_key_openssh
 }
 
-# This will be used to SSH into your EC2 instance. 
+# Generates a local file with name 'filename' with the contents of the EC2 Key Pair
+# This can be used to SSH into the EC2 instanace which gets created
+# This also gets deleted by Terraform when issuing 'terraform destroy' command
 resource "local_file" "my-ec2-keypair" {
   content = tls_private_key.example.private_key_pem
-  filename = "${aws_key_pair.deployer.key_name}.pem"
+  filename = "${aws_key_pair.key.key_name}.pem"
 }
 
-# Security Group
+# Security Group for EC2 instance
 resource "aws_security_group" "allow_ssh_http" {
-  name        = "procstat-demo-sg"
+  name        = "${var.basename}-sg"
   description = "Allow SSH and HTTP"
   ingress {
     from_port   = 22
@@ -45,10 +50,9 @@ resource "aws_security_group" "allow_ssh_http" {
   }
 }
 
-# IAM Role for EC2 with SSM and CloudWatch permissions
+# IAM Role for EC2
 resource "aws_iam_role" "ec2_ssm_role" {
-  name = "procstat-demo-ec2-ssm-role"
-
+  name = "${var.basename}-ec2-ssm-role"
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -63,6 +67,7 @@ resource "aws_iam_role" "ec2_ssm_role" {
   })
 }
 
+# Attach policies to IAM Role for SSM and CloudWatch permissions
 resource "aws_iam_role_policy_attachment" "ssm_attach" {
   role       = aws_iam_role.ec2_ssm_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
@@ -73,25 +78,25 @@ resource "aws_iam_role_policy_attachment" "cloudwatch_attach" {
   policy_arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
 }
 
-# Instance Profile
+# EC2 Instance Profile
 resource "aws_iam_instance_profile" "ec2_profile" {
-  name = "procstat-demo-ec2-profile"
+  name = "${var.basename}-ec2-profile"
   role = aws_iam_role.ec2_ssm_role.name
 }
 
-# SNS topic
+# SNS topic to associate with cloudwatch alarms
 resource "aws_sns_topic" "procstat_alerts" {
-  name = "procstat-demo-alerts"
+  name = "${var.basename}-alerts"
 }
 
-# SNS email subscription
+# Email to subscribe to SNS Topic for notification of alarm activating
 resource "aws_sns_topic_subscription" "email_alert" {
   topic_arn = aws_sns_topic.procstat_alerts.arn
   protocol  = "email"
   endpoint  = "dev@demodaytech.com" # Update this with your email
 }
 
-# EC2 Instance (Amazon Linux 2023)
+# (Amazon Linux 2023)
 data "aws_ami" "amazon_linux" {
   most_recent = true
   owners      = ["amazon"]
@@ -102,11 +107,13 @@ data "aws_ami" "amazon_linux" {
   }
 }
 
-# EC2 Instance
+# EC2 Instance Creation with userdata script
+# This can be extracted out into a separate file and imported using Terraform's 'templatefile()'
+# See 'terraform-and-aws-systems-manager' project for example
 resource "aws_instance" "demo_instance" {
   ami                         = data.aws_ami.amazon_linux.id
   instance_type               = "t3.micro"
-  key_name                    = aws_key_pair.deployer.key_name
+  key_name                    = aws_key_pair.key.key_name
   iam_instance_profile        = aws_iam_instance_profile.ec2_profile.name
   vpc_security_group_ids      = [aws_security_group.allow_ssh_http.id]
 
@@ -119,14 +126,17 @@ resource "aws_instance" "demo_instance" {
               systemctl enable nginx
               systemctl start nginx
 
-              # Simulate my-app process
-              nohup bash -c 'while true; do echo "my-app running"; sleep 10; done' >/var/log/my-app.log 2>&1 &
+              # Simulate a 2nd running process
+              nohup bash -c 'while true; do echo "${var.example-app-name} running"; sleep 10; done' >/var/log/${var.example-app-name}.log 2>&1 &
 
               # Get a session token for IMDSv2
               TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
 
               # Use the token to get the instance ID
               INSTANCE_ID=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/instance-id)
+
+              # Get current date/time which can be used for the cloudwatch metric namespace name
+              CURRENT_DATETIME=$(date '+%Y-%m-%d-%H.%M.%S')
 
               # Write CloudWatch agent config
               cat <<EOT > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
@@ -136,7 +146,7 @@ resource "aws_instance" "demo_instance" {
                       "logfile": "/opt/aws/amazon-cloudwatch-agent/logs/amazon-cloudwatch-agent.log"
                   },
                   "metrics": {
-                      "namespace": "ProcstatDemo",
+                      "namespace": "${var.basename}-${local.current_timestamp}",
                       "append_dimensions": {
                           "InstanceId": "$INSTANCE_ID"
                       },
@@ -145,19 +155,13 @@ resource "aws_instance" "demo_instance" {
                               {
                                   "pattern": "nginx",
                                   "measurement": [
-                                      "cpu_usage",
-                                      "memory_rss",
-                                      "num_threads",
                                       "pid_count"
                                   ],
                                   "metrics_collection_interval": 60
                               },
                               {
-                                  "pattern": "my-app",
+                                  "pattern": "${var.example-app-name}",
                                   "measurement": [
-                                      "cpu_usage",
-                                      "memory_rss",
-                                      "num_threads",
                                       "pid_count"
                                   ],
                                   "metrics_collection_interval": 60
@@ -174,14 +178,14 @@ resource "aws_instance" "demo_instance" {
               EOF
 
   tags = {
-    Name = "procstat-demo-instance"
+    Name = "${var.basename}-instance"
   }
 }
 
-# CloudWatch Alarm - nginx
+# CloudWatch Alarm for 'nginx' process, alert when process count < 1
 resource "aws_cloudwatch_metric_alarm" "nginx_procstat_alarm" {
-  alarm_name          = "procstat-nginx-process-alarm"
-  namespace           = "ProcstatDemo"
+  alarm_name          = "${var.basename}-nginx-process-alarm"
+  namespace           = "${var.basename}-${local.current_timestamp}"
   metric_name         = "procstat_lookup_pid_count"
   comparison_operator = "LessThanThreshold"
   evaluation_periods  = 1
@@ -197,10 +201,10 @@ resource "aws_cloudwatch_metric_alarm" "nginx_procstat_alarm" {
   alarm_actions      = [aws_sns_topic.procstat_alerts.arn]
 }
 
-# CloudWatch Alarm - my-app
+# CloudWatch Alarm for 2nd process, alert when process count < 1
 resource "aws_cloudwatch_metric_alarm" "myapp_procstat_alarm" {
-  alarm_name          = "procstat-myapp-process-alarm"
-  namespace           = "ProcstatDemo"
+  alarm_name          = "${var.basename}-myapp-process-alarm"
+  namespace           = "${var.basename}-${local.current_timestamp}"
   metric_name         = "procstat_lookup_pid_count"
   comparison_operator = "LessThanThreshold"
   evaluation_periods  = 1
@@ -208,10 +212,10 @@ resource "aws_cloudwatch_metric_alarm" "myapp_procstat_alarm" {
   statistic           = "Minimum"
   threshold           = 1
   dimensions = {
-    pattern    = "my-app"
+    pattern    = "${var.example-app-name}"
     pid_finder = "native"
   }
   treat_missing_data = "breaching"
-  alarm_description  = "Alarm when my-app process goes down"
+  alarm_description  = "Alarm when ${var.example-app-name} process goes down"
   alarm_actions      = [aws_sns_topic.procstat_alerts.arn]
 }
