@@ -189,7 +189,8 @@ resource "aws_cloudwatch_metric_alarm" "nginx_procstat_alarm" {
   statistic           = "Minimum"
   threshold           = 1
   dimensions = {
-    pattern    = "nginx"
+    pattern    = "nginx",
+    pid_finder = "native"
   }
   treat_missing_data = "breaching"
   alarm_description  = "Alarm when nginx process goes down"
@@ -208,6 +209,7 @@ resource "aws_cloudwatch_metric_alarm" "myapp_procstat_alarm" {
   threshold           = 1
   dimensions = {
     pattern    = "my-app"
+    pid_finder = "native"
   }
   treat_missing_data = "breaching"
   alarm_description  = "Alarm when my-app process goes down"
