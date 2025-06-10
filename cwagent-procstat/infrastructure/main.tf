@@ -93,7 +93,7 @@ resource "aws_sns_topic" "procstat_alerts" {
 resource "aws_sns_topic_subscription" "email_alert" {
   topic_arn = aws_sns_topic.procstat_alerts.arn
   protocol  = "email"
-  endpoint  = "dev@demodaytech.com" # Update this with your email
+  endpoint  = "test@test.com" # Update this with your email
 }
 
 # (Amazon Linux 2023)
