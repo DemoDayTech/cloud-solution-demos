@@ -2,36 +2,90 @@ import Head from "next/head";
 import Image from "next/image";
 import { Geist, Geist_Mono } from "next/font/google";
 import styles from "@/styles/Home.module.css";
-
+import Link from 'next/link';
+import { themeMaterial } from 'ag-grid-community';
+import { colorSchemeDark, colorSchemeLightWarm, colorSchemeDarkWarm, colorSchemeLightCold } from 'ag-grid-community';
 import { AgGridReact } from 'ag-grid-react'; // React Data Grid Component
 import React, { useMemo, useState } from 'react';
 import { createPricingEngine } from './rulesEngine';
 
+// const myTheme = themeMaterial.withParams({
+//   backgroundColor: 'rgb(249, 245, 227)',
+//   foregroundColor: 'rgb(126, 46, 132)',
+//   headerTextColor: 'rgb(204, 245, 172)',
+//   headerBackgroundColor: 'rgb(136, 133, 143)',
+//   oddRowBackgroundColor: 'rgb(0, 0, 0, 0.03)',
+//   headerColumnResizeHandleColor: 'rgb(126, 46, 132)',
+// });
+const myTheme = themeMaterial
+  .withPart(colorSchemeLightCold)
+  .withParams({
+    headerBackgroundColor: '#cfcdd4',
+    backgroundColor: '#f5f7f7',
+    oddRowBackgroundColor: 'rgb(0, 0, 0, 0.03)'
+  }
+
+  )
+  ;
+
+
 const initialData = [
   {
     quantity: 1, 
-    // instancesize: "t2.nano", 
-    // vram: "16", 
-    // disc: '10', 
-    // region: 'us-east-1',
     price: 0.0
   },
   { 
     quantity: 1,
-    // instancesize: "t2.nano", 
-    // vram: "16", 
-    // disc: '10', 
-    // region: 'us-east-1',
     price: 0.0
   },
   { 
     quantity: 1,
-    // instancesize: "t2.nano", 
-    // vram: "16", 
-    // disc: '10', 
-    // region: 'us-east-1',
     price: 0.0
   },
+  { 
+    quantity: 1,
+    price: 0.0
+  },
+  { 
+    quantity: 1,
+    price: 0.0
+  },
+  { 
+    quantity: 1,
+    price: 0.0
+  },
+  { 
+    quantity: 1,
+    price: 0.0
+  },
+  { 
+    quantity: 1,
+    price: 0.0
+  },
+  { 
+    quantity: 1,
+    price: 0.0
+  },
+  { 
+    quantity: 1,
+    price: 0.0
+  },
+  { 
+    quantity: 1,
+    price: 0.0
+  },
+  { 
+    quantity: 1,
+    price: 0.0
+  },
+  { 
+    quantity: 1,
+    price: 0.0
+  },
+  { 
+    quantity: 1,
+    price: 0.0
+  }
 ];
 
 export default function Home() {
@@ -46,7 +100,7 @@ export default function Home() {
         cellEditor: 'agSelectCellEditor',
         cellEditorParams: {
           values: [1,2,3,4,5] 
-        }
+        },
       },
       {
         headerName: 'Instance Size',
@@ -170,13 +224,48 @@ export default function Home() {
   };
 
   return (
-    <div style={{ height: '35vh' }}>
-    <AgGridReact
-        rowData={rowData}
-        columnDefs={colDefs}
-        onCellValueChanged={onCellValueChanged}
-    />
-  </div>
+    <>
+      <nav className="navbar navbar-expand-lg navbar-dark bg-dark" style={{ height: '50px' }}>
+        <div className="container-fluid">
+          <Link href="/" className="navbar-brand">AG Grid with JSON Rules Engine Demo</Link>
+          <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+            aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span className="navbar-toggler-icon"></span>
+          </button>
+          <div className="collapse navbar-collapse" id="navbarNav">
+            <ul className="navbar-nav ms-auto">
+              <li className="nav-item">
+                <Link href="/" className="nav-link">Home</Link>
+              </li>
+              <li className="nav-item">
+                <Link href="/" className="nav-link">About</Link>
+              </li>
+              <li className="nav-item">
+                <Link href="/" className="nav-link">Contact</Link>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </nav>
+
+      <div class="jumbotron jumbotron-fluid" style={{ height: '100px', backgroundColor: '#e9ecef' }}>
+        <div class="container">
+          <p class="text-center align-items-center p-1" >This is a demo of a ReactJS web app, which uses AG Grid and a JSON Rules Engine to calculate prices based on selected values from the grid. </p>
+          <p class="text-center align-items-center p-1" >The Price and Total columns will update automatically based on your selections in the table. </p>
+
+       </div>
+      </div>
+
+    <div class="ag-theme-balham-dark" style={{ height: 'calc(100vh - 150px)', width: '100vw' }}>
+      <AgGridReact
+          rowData={rowData}
+          columnDefs={colDefs}
+          onCellValueChanged={onCellValueChanged}
+          defaultColDef={{ flex: 1 }}
+          theme={myTheme}
+      />
+    </div>
+    </>
 
   );
 }
