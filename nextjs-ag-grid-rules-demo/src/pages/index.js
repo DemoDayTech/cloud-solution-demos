@@ -8,26 +8,20 @@ import { colorSchemeDark, colorSchemeLightWarm, colorSchemeDarkWarm, colorScheme
 import { AgGridReact } from 'ag-grid-react'; // React Data Grid Component
 import React, { useMemo, useState } from 'react';
 import { createPricingEngine } from './rulesEngine';
+import { 
+  instanceSurchargeRules,
+  vramSurchargeRules,
+  discSurchargeRules,
+  regionSurchargeRules
+} from './ruleDefns';
 
-// const myTheme = themeMaterial.withParams({
-//   backgroundColor: 'rgb(249, 245, 227)',
-//   foregroundColor: 'rgb(126, 46, 132)',
-//   headerTextColor: 'rgb(204, 245, 172)',
-//   headerBackgroundColor: 'rgb(136, 133, 143)',
-//   oddRowBackgroundColor: 'rgb(0, 0, 0, 0.03)',
-//   headerColumnResizeHandleColor: 'rgb(126, 46, 132)',
-// });
 const myTheme = themeMaterial
   .withPart(colorSchemeLightCold)
   .withParams({
     headerBackgroundColor: '#cfcdd4',
     backgroundColor: '#f5f7f7',
     oddRowBackgroundColor: 'rgb(0, 0, 0, 0.03)'
-  }
-
-  )
-  ;
-
+  });
 
 const initialData = [
   {
@@ -88,8 +82,36 @@ const initialData = [
   }
 ];
 
+const JsonDisplay = ({ data }) => {
+  let json = '';
+  if (data === 'instanceSurcharge') {
+    json = instanceSurchargeRules;
+  } else if (data === 'vramSurcharge') {
+    json = vramSurchargeRules;
+  } else if (data === 'discSurcharge') {
+    json = discSurchargeRules;
+  } else if (data === 'regionSurcharge') {
+    json = regionSurchargeRules
+  }
+  return (
+    <div className="container pt-2">
+      <h5>JSON Rules Applied</h5>
+      <pre className="bg-dark text-white p-3 rounded"
+      style={{
+        height: '300px',
+        overflowY: 'auto',
+        whiteSpace: 'pre-wrap',
+        wordWrap: 'break-word'
+      }}>
+        <code>{JSON.stringify(json, null, 2)}</code>
+      </pre>
+    </div>
+  );
+};
+
 export default function Home() {
   const [rowData, setRowData] = useState(initialData);
+  const [currentSurchargeRule, setCurrentSurchargeRule] = useState()
   const pricingEngine = useMemo(() => createPricingEngine(), []);
 
   const colDefs = useMemo(() => [
@@ -187,10 +209,25 @@ export default function Home() {
     });
 
     for (let event of events) {
-      if (event.type === 'instanceSurcharge') price += event.params.surcharge;
-      if (event.type === 'vramSurcharge') price += event.params.surcharge;
-      if (event.type === 'discSurcharge') price += event.params.surcharge;
-      if (event.type === 'regionSurcharge') price += event.params.surcharge;
+      if (event.type === 'instanceSurcharge') {
+        price += event.params.surcharge;
+        setCurrentSurchargeRule(event.type);
+      }
+
+      if (event.type === 'vramSurcharge') {
+        price += event.params.surcharge;
+        setCurrentSurchargeRule(event.type);
+      }
+        
+      if (event.type === 'discSurcharge') {
+        price += event.params.surcharge;
+        setCurrentSurchargeRule(event.type);
+      }
+        
+      if (event.type === 'regionSurcharge') {
+        price += event.params.surcharge;
+        setCurrentSurchargeRule(event.type);
+      }
     }
 
     // Multiply price by the quantity
@@ -257,15 +294,15 @@ export default function Home() {
         </div>
       </nav>
 
-      <div class="jumbotron jumbotron-fluid" style={{ height: '100px', backgroundColor: '#e9ecef' }}>
+      {/* <div class="jumbotron jumbotron-fluid" style={{ height: '100px', backgroundColor: '#e9ecef' }}>
         <div class="container">
           <p class="text-center align-items-center p-1" >This is a demo of a ReactJS web app, which uses AG Grid and a JSON Rules Engine to calculate prices based on selected values from the grid. </p>
           <p class="text-center align-items-center p-1" >The Price and Total columns will update automatically based on your selections in the table. </p>
 
        </div>
-      </div>
+      </div> */}
 
-    <div class="ag-theme-balham-dark" style={{ height: 'calc(100vh - 150px)', width: '100vw' }}>
+    <div class="ag-theme-balham-dark" style={{ height: 'calc(65vh - 150px)', width: '100vw' }}>
       <AgGridReact
           rowData={rowData}
           columnDefs={colDefs}
@@ -274,6 +311,7 @@ export default function Home() {
           theme={myTheme}
       />
     </div>
+    <JsonDisplay data={currentSurchargeRule}/>
     </>
 
   );
