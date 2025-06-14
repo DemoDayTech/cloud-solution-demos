@@ -1,4 +1,4 @@
-/* .ag-theme-material .ag-row:nth-child(even) {
-    background-color: #e72020;
-  }
-   */
+/* .ag-cell-data-changed {
+    background-color: red !important;
+    transition: background-color 1s ease;
+} */

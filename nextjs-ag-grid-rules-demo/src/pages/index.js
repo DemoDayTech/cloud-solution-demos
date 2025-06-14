@@ -211,16 +211,25 @@ export default function Home() {
   };
 
   const onCellValueChanged = async (params) => {
+    const rowIndex = params.node.rowIndex;
     const updatedRow = { ...params.data };
     const { price, total } = await calculatePrice(updatedRow);
     updatedRow.price = price
     updatedRow.total = total
 
-
     const updatedRows = rowData.map((r, i) =>
       i === params.node.rowIndex ? updatedRow : r
     );
     setRowData(updatedRows);
+
+    setTimeout(() => {
+      params.api.flashCells({
+        rowNodes: [params.node],
+        columns: ['price', 'total'],
+        flashDelay: 200,  // Wait before flashing
+        fadeDelay: 1000   // Flash visible for 1 second
+      });
+    }, 50); // Delay can be adjusted (e.g., 50–100 ms)
   };
 
   return (
