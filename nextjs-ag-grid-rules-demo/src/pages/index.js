@@ -11,6 +11,7 @@ import {
   regionSurchargeRules
 } from './ruleDefns';
 import { initialData } from './initialData';
+import IntroModal from './introModal';
 
 const myTheme = themeMaterial
   .withPart(colorSchemeLightCold)
@@ -31,10 +32,16 @@ export default function Home() {
         headerName: 'Quantity',
         field: "quantity", 
         editable: true,
-        cellEditor: 'agSelectCellEditor',
-        cellEditorParams: {
-          values: [1,2,3,4,5] 
+        valueParser: (params) => {
+          const val = parseInt(params.newValue, 10);
+          return isNaN(val) ? null : val;
         },
+        cellClassRules: {
+          'cell-error': (params) => {
+            const value = params.value;
+            return value < 1 || value > 100;
+          }
+        }
       },
       {
         headerName: 'Instance Size',
@@ -96,6 +103,16 @@ export default function Home() {
         headerName: 'Margin (%)',
         field: "margin", 
         editable: true,
+        valueParser: (params) => {
+          const val = parseInt(params.newValue, 10);
+          return isNaN(val) ? null : val;
+        },
+        cellClassRules: {
+          'cell-error': (params) => {
+            const value = params.value;
+            return value < 1 || value > 100;
+          }
+        }
       },
       { 
         headerName: 'Total',
@@ -228,6 +245,7 @@ export default function Home() {
 
   return (
     <>
+      <IntroModal />
       <nav className="navbar navbar-expand-lg navbar-dark bg-dark" style={{ height: '50px' }}>
         <div className="container-fluid">
           <Link href="/" className="navbar-brand">AG Grid with JSON Rules Engine Demo</Link>
