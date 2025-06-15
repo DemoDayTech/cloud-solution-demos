@@ -1,11 +1,7 @@
-import Head from "next/head";
-import Image from "next/image";
-import { Geist, Geist_Mono } from "next/font/google";
-import styles from "@/styles/Home.module.css";
 import Link from 'next/link';
 import { themeMaterial } from 'ag-grid-community';
-import { colorSchemeDark, colorSchemeLightWarm, colorSchemeDarkWarm, colorSchemeLightCold } from 'ag-grid-community';
-import { AgGridReact } from 'ag-grid-react'; // React Data Grid Component
+import { colorSchemeLightCold } from 'ag-grid-community';
+import { AgGridReact } from 'ag-grid-react';
 import React, { useMemo, useState } from 'react';
 import { createPricingEngine } from './rulesEngine';
 import { 
@@ -14,6 +10,7 @@ import {
   discSurchargeRules,
   regionSurchargeRules
 } from './ruleDefns';
+import { initialData } from './initialData';
 
 const myTheme = themeMaterial
   .withPart(colorSchemeLightCold)
@@ -23,95 +20,10 @@ const myTheme = themeMaterial
     oddRowBackgroundColor: 'rgb(0, 0, 0, 0.03)'
   });
 
-const initialData = [
-  {
-    quantity: 1, 
-    price: 0.0
-  },
-  { 
-    quantity: 1,
-    price: 0.0
-  },
-  { 
-    quantity: 1,
-    price: 0.0
-  },
-  { 
-    quantity: 1,
-    price: 0.0
-  },
-  { 
-    quantity: 1,
-    price: 0.0
-  },
-  { 
-    quantity: 1,
-    price: 0.0
-  },
-  { 
-    quantity: 1,
-    price: 0.0
-  },
-  { 
-    quantity: 1,
-    price: 0.0
-  },
-  { 
-    quantity: 1,
-    price: 0.0
-  },
-  { 
-    quantity: 1,
-    price: 0.0
-  },
-  { 
-    quantity: 1,
-    price: 0.0
-  },
-  { 
-    quantity: 1,
-    price: 0.0
-  },
-  { 
-    quantity: 1,
-    price: 0.0
-  },
-  { 
-    quantity: 1,
-    price: 0.0
-  }
-];
-
-const JsonDisplay = ({ data }) => {
-  let json = '';
-  if (data === 'instanceSurcharge') {
-    json = instanceSurchargeRules;
-  } else if (data === 'vramSurcharge') {
-    json = vramSurchargeRules;
-  } else if (data === 'discSurcharge') {
-    json = discSurchargeRules;
-  } else if (data === 'regionSurcharge') {
-    json = regionSurchargeRules
-  }
-  return (
-    <div className="container pt-2">
-      <h5>JSON Rules Applied</h5>
-      <pre className="bg-dark text-white p-3 rounded"
-      style={{
-        height: '300px',
-        overflowY: 'auto',
-        whiteSpace: 'pre-wrap',
-        wordWrap: 'break-word'
-      }}>
-        <code>{JSON.stringify(json, null, 2)}</code>
-      </pre>
-    </div>
-  );
-};
-
 export default function Home() {
   const [rowData, setRowData] = useState(initialData);
   const [currentSurchargeRule, setCurrentSurchargeRule] = useState()
+  const [currentSurchargeValue, setCurrentSurchargeValue] = useState()
   const pricingEngine = useMemo(() => createPricingEngine(), []);
 
   const colDefs = useMemo(() => [
@@ -192,7 +104,7 @@ export default function Home() {
       }
   ], []);
 
-  const calculatePrice = async (row) => {
+  const calculatePrice = async (row, columnName) => {
     let quantity = parseInt(row.quantity)
     let margin = parseInt(row.margin)
     let instancesize = row.instancesize
@@ -201,32 +113,44 @@ export default function Home() {
     let region = row.region
     let price = 0.0
 
-    const { events } = await pricingEngine.run({
+    const facts = {
       instancesize: instancesize,
       vram: vram,
       disc: disc,
       region: region
-    });
+    }
+    console.log(`calculatePrice() - ${JSON.stringify(facts)}`)
+    const { events } = await pricingEngine.run(facts);
+    console.log(`calculatePrice() events: - ${JSON.stringify(events)}`)
 
     for (let event of events) {
       if (event.type === 'instanceSurcharge') {
         price += event.params.surcharge;
-        setCurrentSurchargeRule(event.type);
+        if(columnName == 'instancesize') {
+          setCurrentSurchargeRule(event.type);
+          setCurrentSurchargeValue(instancesize)
+        }
       }
-
       if (event.type === 'vramSurcharge') {
         price += event.params.surcharge;
-        setCurrentSurchargeRule(event.type);
+        if(columnName == 'vram') {
+          setCurrentSurchargeRule(event.type);
+          setCurrentSurchargeValue(vram)
+        }
       }
-        
       if (event.type === 'discSurcharge') {
         price += event.params.surcharge;
-        setCurrentSurchargeRule(event.type);
+        if(columnName == 'disc') {
+          setCurrentSurchargeRule(event.type);
+          setCurrentSurchargeValue(disc)
+        }
       }
-        
       if (event.type === 'regionSurcharge') {
         price += event.params.surcharge;
-        setCurrentSurchargeRule(event.type);
+        if(columnName == 'region') {
+          setCurrentSurchargeRule(event.type);
+          setCurrentSurchargeValue(region)
+        }
       }
     }
 
@@ -243,14 +167,47 @@ export default function Home() {
       price: parseFloat(price.toFixed(2)),
       total: parseFloat(total.toFixed(2)),
     }
-    
-    
+  };
+
+  const JsonDisplay = ({ data }) => {
+    let json = '';
+    if (data === 'instanceSurcharge') {
+      json = instanceSurchargeRules.filter(obj => obj.conditions.any[0].value === currentSurchargeValue)
+    } else if (data === 'vramSurcharge') {
+      json = vramSurchargeRules.filter(obj => obj.conditions.any[0].value === currentSurchargeValue)
+    } else if (data === 'discSurcharge') {
+      json = discSurchargeRules.filter(obj => obj.conditions.any[0].value === currentSurchargeValue)
+    } else if (data === 'regionSurcharge') {
+      json = regionSurchargeRules.filter(obj => obj.conditions.any[0].value === currentSurchargeValue)
+    }
+    return (
+      <div className="container pt-2 ">
+        <h5>Last JSON Rule Applied</h5>
+        <pre className="bg-dark text-white p-3 rounded"
+        style={{
+          height: '40vh',
+          overflowY: 'auto',
+          whiteSpace: 'pre-wrap',
+          wordWrap: 'break-word',
+          fontSize: '1rem',
+        }}>
+          <code>{JSON.stringify(json, null, 2)}</code>
+        </pre>
+      </div>
+    );
   };
 
   const onCellValueChanged = async (params) => {
     const rowIndex = params.node.rowIndex;
+    console.log(`onCellValueChanged() - rowIndex - ${JSON.stringify(rowIndex)}`)
+
+    const columnName = params.column.getColDef().field;
+    console.log(`onCellValueChanged() - columnName - ${JSON.stringify(columnName)}`)
+
     const updatedRow = { ...params.data };
-    const { price, total } = await calculatePrice(updatedRow);
+    console.log(`onCellValueChanged() - ${JSON.stringify(updatedRow)}`)
+
+    const { price, total } = await calculatePrice(updatedRow, columnName);
     updatedRow.price = price
     updatedRow.total = total
 
@@ -293,26 +250,17 @@ export default function Home() {
           </div>
         </div>
       </nav>
-
-      {/* <div class="jumbotron jumbotron-fluid" style={{ height: '100px', backgroundColor: '#e9ecef' }}>
-        <div class="container">
-          <p class="text-center align-items-center p-1" >This is a demo of a ReactJS web app, which uses AG Grid and a JSON Rules Engine to calculate prices based on selected values from the grid. </p>
-          <p class="text-center align-items-center p-1" >The Price and Total columns will update automatically based on your selections in the table. </p>
-
-       </div>
-      </div> */}
-
-    <div class="ag-theme-balham-dark" style={{ height: 'calc(65vh - 150px)', width: '100vw' }}>
-      <AgGridReact
-          rowData={rowData}
-          columnDefs={colDefs}
-          onCellValueChanged={onCellValueChanged}
-          defaultColDef={{ flex: 1 }}
-          theme={myTheme}
-      />
-    </div>
-    <JsonDisplay data={currentSurchargeRule}/>
+      <div class="ag-theme-balham-dark" style={{ height: '40vh', width: '100vw' }}>
+        <AgGridReact
+            rowData={rowData}
+            columnDefs={colDefs}
+            onCellValueChanged={onCellValueChanged}
+            defaultColDef={{ flex: 1 }}
+            theme={myTheme}
+            style={{ borderBottom: '2px solid #ccc' }}
+        />
+      </div>
+      <JsonDisplay data={currentSurchargeRule}/>
     </>
-
   );
 }
