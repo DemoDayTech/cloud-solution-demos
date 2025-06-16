@@ -3,14 +3,14 @@ import { themeMaterial } from 'ag-grid-community';
 import { colorSchemeLightCold } from 'ag-grid-community';
 import { AgGridReact } from 'ag-grid-react';
 import React, { useMemo, useState } from 'react';
-import { createPricingEngine } from './rulesEngine';
+import { createPricingEngine } from '../../lib/rulesEngine';
 import { 
   instanceSurchargeRules,
   vramSurchargeRules,
   discSurchargeRules,
   regionSurchargeRules
-} from './ruleDefns';
-import { initialData } from './initialData';
+} from '../../lib/ruleDefns';
+import { initialData } from '../../lib/initialData';
 import IntroModal from './introModal';
 
 const myTheme = themeMaterial
